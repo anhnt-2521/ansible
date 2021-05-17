@@ -1,0 +1,3 @@
+deploy_user: ubuntu
+base_maxopenfile: '65536'
+base_timezone: Asia/Tokyo

@@ -1,0 +1,100 @@
+#cai dat nginx va mysql
+   - name: install
+     apt:
+      name: "{{item}}"
+      state: present
+     with_items:
+      - nginx
+      - mysql-server 
+   - name: start
+     service:
+      name: "{{item}}"
+      state: restarted
+     with_items:
+      - nginx
+      - mysql
+#cau hinh mysql cai dat va phan quyen db
+   - name: install python
+     apt:
+      name: python3
+      state: present
+   - name: install mysql python
+     apt:
+      name: python3-pymysql
+      state: present
+   - name: set password root db
+     mysql_user:
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+      name: root
+      password: 123@123a   
+   - name: tao file my.conf
+     ansible.builtin.template:
+      src: .my.cnf
+      dest: /root/.my.cnf
+      owner: root
+      mode: '0600'
+   - name: tao db
+     mysql_db:
+      name: wpdb
+      state: present
+     become: true    
+   - name: tao userdb
+     mysql_user:
+      name: wpdbuser
+      host: localhost
+      password: 123@123a
+      priv: 'wpdb.*:ALL'
+      state: present
+     become: true
+#cai dat php7.4
+   - name: install software-properties-common
+     apt:
+      name: software-properties-common
+      state: present
+   - name: add repo ppa:ondrej/php
+     apt_repository:
+      repo: ppa:ondrej/php
+      state: present
+   - name: install php7.4
+     apt:
+      name: "{{item}}"
+      state: present
+     with_items:
+     - php7.4-fpm
+     - php7.4-common
+     - php7.4-mysql
+     - php7.4-gmp
+     - php7.4-curl
+     - php7.4-intl
+     - php7.4-mbstring
+     - php7.4-xmlrpc
+     - php7.4-gd
+     - php7.4-xml
+     - php7.4-cli
+     - php7.4-zip
+#tai va cai dat wp
+   - name: download wp
+     get_url:
+      url: https://wordpress.org/latest.tar.gz
+      dest: /tmp
+   - name: giai nen
+     unarchive:
+      src: /tmp/wordpress-5.7.2.tar.gz
+      dest: /tmp
+      remote_src: yes
+   - name: move wp vao var/www/html
+     shell: mv /tmp/wordpress /var/www/wordpress
+   - name: cap quyen thu muc wp
+     shell: chown -R www-data:www-data /var/www/wordpress/
+   - name: cap quyen 775 thu muc var/www/html
+     shell: chmod -R 755 /var/www/wordpress/
+   - name: template file config
+     template:
+      src: wordpress
+      dest: /etc/nginx/sites-available/wordpress
+   - name: enable sites
+     shell: ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+   - name: restart nginx
+     service:
+      name: nginx
+      state: restarted
